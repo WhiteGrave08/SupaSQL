@@ -1,0 +1,5 @@
+{
+  "name": "SupaSQL",
+  "description": "An AI-first database schema design platform that turns plain-English ideas into production-ready schemas, migrations, and code.",
+  "requestFramePermissions": []
+}
