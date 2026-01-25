@@ -24,6 +24,27 @@ export const PropertiesPanel: React.FC = () => {
   } = useStore();
 
   const [showSemanticInfo, setShowSemanticInfo] = useState<string | null>(null);
+  const [localTableName, setLocalTableName] = useState(selectedTableId ? currentSchema.tables.find(t => t.id === selectedTableId)?.name || "" : "");
+
+  // Update local name when selection changes
+  React.useEffect(() => {
+    if (selectedTableId) {
+      const t = currentSchema.tables.find(t => t.id === selectedTableId);
+      if (t) setLocalTableName(t.name);
+    }
+  }, [selectedTableId, currentSchema.tables]);
+
+  // Debounce update
+  React.useEffect(() => {
+    if (!selectedTableId) return;
+    const t = currentSchema.tables.find(t => t.id === selectedTableId);
+    if (t && localTableName !== t.name) {
+      const timer = setTimeout(() => {
+        updateTable(selectedTableId, { name: localTableName });
+      }, 3000); // 3 seconds debounce
+      return () => clearTimeout(timer);
+    }
+  }, [localTableName, selectedTableId]);
 
   const selectedTable = currentSchema.tables.find(
     (t) => t.id === selectedTableId
@@ -78,10 +99,8 @@ export const PropertiesPanel: React.FC = () => {
             </span>
             <input
               type="text"
-              value={selectedTable.name}
-              onChange={(e) =>
-                updateTable(selectedTable.id, { name: e.target.value })
-              }
+              value={localTableName}
+              onChange={(e) => setLocalTableName(e.target.value)}
               className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-white transition-all"
             />
           </div>
@@ -203,20 +222,18 @@ export const PropertiesPanel: React.FC = () => {
                     }
                   >
                     <div
-                      className={`w-3 h-3 rounded border flex items-center justify-center transition-all ${
-                        col.isNullable
+                      className={`w-3 h-3 rounded border flex items-center justify-center transition-all ${col.isNullable
                           ? "bg-blue-500 border-blue-500"
                           : "bg-transparent border-neutral-700"
-                      }`}
+                        }`}
                     >
                       {col.isNullable && (
                         <ArrowRight className="w-2 h-2 text-white rotate-90" />
                       )}
                     </div>
                     <span
-                      className={`text-[10px] font-bold uppercase transition-colors ${
-                        col.isNullable ? "text-neutral-300" : "text-neutral-600"
-                      }`}
+                      className={`text-[10px] font-bold uppercase transition-colors ${col.isNullable ? "text-neutral-300" : "text-neutral-600"
+                        }`}
                     >
                       Nullable
                     </span>
@@ -239,7 +256,7 @@ export const PropertiesPanel: React.FC = () => {
         <div className="pt-6 border-t border-neutral-800">
           <div className="p-4 bg-neutral-900/50 border border-neutral-800 rounded-2xl relative group overflow-hidden">
             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Sparkles className="w-12 h-12 text-blue-500" />
+              <Shield className="w-12 h-12 text-blue-500" />
             </div>
             <div className="flex flex-col items-start relative z-10">
               <div className="flex items-center gap-2 mb-2">
@@ -249,14 +266,16 @@ export const PropertiesPanel: React.FC = () => {
                 </span>
               </div>
               <span className="text-xs font-bold text-neutral-200 mb-1">
-                Index: {selectedTable.name}_search_idx
+                Security: RLS Policy Missing
               </span>
               <p className="text-[10px] text-neutral-500 leading-relaxed font-medium mb-3">
-                Used in 78% of queries seen in production patterns for similar
-                models.
+                Table <code>{selectedTable.name}</code> has no Row Level Security enabled. This is a critical risk.
               </p>
-              <button className="flex items-center gap-1.5 text-[10px] font-bold text-blue-500 hover:text-blue-400 transition-colors">
-                <span>Apply Optimization</span>
+              <button
+                onClick={() => useStore.getState().setView("rls")}
+                className="flex items-center gap-1.5 text-[10px] font-bold text-blue-500 hover:text-blue-400 transition-colors"
+              >
+                <span>ENABLE RLS PROTECTION</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>

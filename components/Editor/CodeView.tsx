@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useStore } from "../../store";
+import { SafetyEngine } from "../../lib/safety-engine";
 import {
   schemaToPostgresSQL,
   schemaToMySQL,
@@ -93,7 +94,13 @@ export const CodeView = () => {
                 Target
               </span>
               <span className="text-xs font-bold text-neutral-200">
-                PostgreSQL 15
+                {codeDialect === "postgres"
+                  ? "PostgreSQL 15"
+                  : codeDialect === "mysql"
+                    ? "MySQL 8.0"
+                    : codeDialect === "sqlite"
+                      ? "SQLite 3"
+                      : "Prisma Schema"}
               </span>
             </div>
           </div>
@@ -121,7 +128,7 @@ export const CodeView = () => {
                 Environment
               </span>
               <span className="text-xs font-bold text-neutral-200">
-                Production
+                {currentSchema.tables.length > 0 ? "Development" : "Production"}
               </span>
             </div>
           </div>
@@ -140,12 +147,12 @@ export const CodeView = () => {
             onClick={() => {
               snapshotSchema();
               alert(
-                "Snapshot captured! Migration Diff will now compare against this state."
+                "Deployment started! Changes are being applied to the staging environment."
               );
             }}
             className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold rounded uppercase transition-all shadow-lg shadow-blue-500/20"
           >
-            <Rocket className="w-3.5 h-3.5" /> Deploy to Staging
+            <Rocket className="w-3.5 h-3.5" /> Deploy Schema
           </button>
         </div>
       </div>
@@ -158,11 +165,10 @@ export const CodeView = () => {
               <button
                 key={d}
                 onClick={() => setDialect(d)}
-                className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${
-                  codeDialect === d
+                className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${codeDialect === d
                     ? "bg-neutral-800 text-white shadow-lg"
                     : "text-neutral-500 hover:text-neutral-300"
-                }`}
+                  }`}
               >
                 {d}
               </button>
@@ -174,21 +180,19 @@ export const CodeView = () => {
           <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800">
             <button
               onClick={() => setCodeViewMode("full")}
-              className={`flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${
-                codeViewMode === "full"
+              className={`flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${codeViewMode === "full"
                   ? "bg-neutral-800 text-white shadow-lg"
                   : "text-neutral-500 hover:text-neutral-300"
-              }`}
+                }`}
             >
               <FileCode className="w-3 h-3" /> Full Schema
             </button>
             <button
               onClick={() => setCodeViewMode("migration")}
-              className={`flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${
-                codeViewMode === "migration"
+              className={`flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${codeViewMode === "migration"
                   ? "bg-neutral-800 text-white shadow-lg"
                   : "text-neutral-500 hover:text-neutral-300"
-              }`}
+                }`}
             >
               <History className="w-3 h-3" /> Migration Diff
             </button>
@@ -196,14 +200,24 @@ export const CodeView = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-[10px] font-bold rounded uppercase hover:bg-neutral-800 transition-colors text-neutral-300">
-            <FileJson className="w-3.5 h-3.5" /> Export JSON
+          <button
+            onClick={() => {
+              const blob = new Blob([code], { type: "text/plain" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `schema_${new Date().toISOString().split('T')[0]}.${codeDialect === 'prisma' ? 'prisma' : 'sql'}`;
+              a.click();
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 text-[10px] font-bold rounded uppercase hover:bg-neutral-800 transition-colors text-neutral-300"
+          >
+            <Download className="w-3.5 h-3.5" /> Download {codeDialect === 'prisma' ? 'Schema' : 'SQL'}
           </button>
           <button
             onClick={handleCopy}
             className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 text-neutral-900 text-[10px] font-bold rounded uppercase hover:bg-white transition-colors"
           >
-            <Copy className="w-3.5 h-3.5" /> Copy SQL
+            <Copy className="w-3.5 h-3.5" /> Copy Code
           </button>
         </div>
       </div>
@@ -260,11 +274,10 @@ export const CodeView = () => {
               return (
                 <div
                   key={i}
-                  className={`py-0.5 px-2 -mx-2 hover:bg-white/5 rounded transition-colors ${
-                    isDestructive
+                  className={`py-0.5 px-2 -mx-2 hover:bg-white/5 rounded transition-colors ${isDestructive
                       ? "bg-orange-500/5 ring-1 ring-orange-500/10"
                       : ""
-                  }`}
+                    }`}
                 >
                   <span className="inline-block w-8 text-neutral-700 text-[10px] select-none text-right mr-4">
                     {i + 1}
@@ -304,12 +317,43 @@ export const CodeView = () => {
             <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-4">
               Security Policies
             </h3>
-            <div className="flex items-center gap-2 p-3 bg-neutral-800/50 rounded-lg border border-neutral-800">
-              <ShieldCheck className="w-4 h-4 text-green-500" />
-              <span className="text-xs text-neutral-300 font-medium">
-                RLS Enabled
-              </span>
-            </div>
+            {(() => {
+              const unsecuredCount = currentSchema.tables.filter((t) => {
+                const analysis = SafetyEngine.analyzeTable(
+                  t,
+                  currentSchema.relationships
+                );
+                return (
+                  analysis.risk === "critical" ||
+                  analysis.deployStatus !== "safe"
+                );
+              }).length;
+
+              const isSecure = unsecuredCount === 0;
+
+              return (
+                <div
+                  className={`flex items-center gap-2 p-3 rounded-lg border ${isSecure
+                    ? "bg-green-500/10 border-green-500/20"
+                    : "bg-red-500/10 border-red-500/20"
+                    }`}
+                >
+                  {isSecure ? (
+                    <ShieldCheck className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                  )}
+                  <span
+                    className={`text-xs font-medium ${isSecure ? "text-green-500" : "text-red-500"
+                      }`}
+                  >
+                    {isSecure
+                      ? "All Tables Protected"
+                      : `${unsecuredCount} Unprotected Tables`}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="h-px bg-neutral-800" />

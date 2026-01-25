@@ -1,14 +1,14 @@
 
 export type DataType = 'uuid' | 'text' | 'varchar' | 'int' | 'bigint' | 'boolean' | 'timestamp' | 'jsonb' | 'decimal';
 
-export type SemanticType = 
+export type SemanticType =
   | 'none'
-  | 'email' 
-  | 'username' 
-  | 'password_hash' 
-  | 'currency' 
-  | 'timestamp_created' 
-  | 'timestamp_updated' 
+  | 'email'
+  | 'username'
+  | 'password_hash'
+  | 'currency'
+  | 'timestamp_created'
+  | 'timestamp_updated'
   | 'soft_delete'
   | 'slug'
   | 'url';
@@ -31,6 +31,7 @@ export interface Table {
   columns: Column[];
   position: { x: number; y: number };
   description?: string;
+  policies?: string[];
 }
 
 export type RelationAction = 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';

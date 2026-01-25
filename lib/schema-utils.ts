@@ -18,6 +18,16 @@ export const schemaToPostgresSQL = (schema: CanonicalSchema): string => {
     });
     sql += columnDefinitions.join(',\n');
     sql += `\n);\n\n`;
+
+    // RLS Policies
+    if (table.policies && table.policies.length > 0) {
+      sql += `-- Security: RLS Policies for ${table.name}\n`;
+      sql += `ALTER TABLE "${table.name}" ENABLE ROW LEVEL SECURITY;\n`;
+      table.policies.forEach((policy) => {
+        sql += `${policy}\n`;
+      });
+      sql += `\n`;
+    }
   });
 
   schema.relationships.forEach((rel) => {
@@ -41,7 +51,7 @@ export const schemaToMySQL = (schema: CanonicalSchema): string => {
       let type = col.type.toUpperCase();
       if (type === 'UUID') type = 'VARCHAR(36)';
       if (type === 'TEXT') type = 'LONGTEXT';
-      
+
       let def = `  \`${col.name}\` ${type}`;
       if (col.isPrimaryKey) def += ` PRIMARY KEY`;
       if (!col.isNullable) def += ` NOT NULL`;
@@ -70,7 +80,7 @@ export const schemaToSQLite = (schema: CanonicalSchema): string => {
       let type = col.type.toUpperCase();
       if (type === 'UUID') type = 'TEXT';
       if (type === 'JSONB') type = 'TEXT';
-      
+
       let def = `  "${col.name}" ${type}`;
       if (col.isPrimaryKey) def += ` PRIMARY KEY`;
       if (!col.isNullable) def += ` NOT NULL`;
@@ -105,13 +115,13 @@ export const schemaToPrisma = (schema: CanonicalSchema): string => {
       if (col.defaultValue) prisma += ` @default(${col.defaultValue})`;
       prisma += `\n`;
     });
-    
+
     // Relations in Prisma
     schema.relationships.forEach(rel => {
-        if (rel.fromTable === table.name) {
-            const toTable = schema.tables.find(t => t.name === rel.toTable);
-            prisma += `  ${rel.toTable} ${rel.toTable} @relation(fields: [${rel.fromColumn}], references: [${rel.toColumn}])\n`;
-        }
+      if (rel.fromTable === table.name) {
+        const toTable = schema.tables.find(t => t.name === rel.toTable);
+        prisma += `  ${rel.toTable} ${rel.toTable} @relation(fields: [${rel.fromColumn}], references: [${rel.toColumn}])\n`;
+      }
     });
 
     prisma += `}\n\n`;
@@ -164,20 +174,20 @@ export const calculateMigrationDiff = (prev: CanonicalSchema, next: CanonicalSch
             isDestructive: false
           });
         } else if (newCol.type !== oldCol.type || newCol.name !== oldCol.name) {
-             if (newCol.name !== oldCol.name) {
-                steps.push({
-                    type: 'ALTER_COLUMN',
-                    sql: `ALTER TABLE "${newTable.name}" RENAME COLUMN "${oldCol.name}" TO "${newCol.name}";`,
-                    isDestructive: false
-                });
-             }
-             if (newCol.type !== oldCol.type) {
-                steps.push({
-                    type: 'ALTER_COLUMN',
-                    sql: `ALTER TABLE "${newTable.name}" ALTER COLUMN "${newCol.name}" TYPE ${newCol.type.toUpperCase()}; -- ⚠️ Potential data loss if incompatible`,
-                    isDestructive: true
-                });
-             }
+          if (newCol.name !== oldCol.name) {
+            steps.push({
+              type: 'ALTER_COLUMN',
+              sql: `ALTER TABLE "${newTable.name}" RENAME COLUMN "${oldCol.name}" TO "${newCol.name}";`,
+              isDestructive: false
+            });
+          }
+          if (newCol.type !== oldCol.type) {
+            steps.push({
+              type: 'ALTER_COLUMN',
+              sql: `ALTER TABLE "${newTable.name}" ALTER COLUMN "${newCol.name}" TYPE ${newCol.type.toUpperCase()}; -- ⚠️ Potential data loss if incompatible`,
+              isDestructive: true
+            });
+          }
         }
       });
 

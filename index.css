@@ -16,7 +16,7 @@ body,
 #root {
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  overflow: auto;
   background-color: var(--bg-color);
   color: var(--text-color);
   font-family: "Inter", sans-serif;

@@ -30,20 +30,20 @@ export const EditorHeader: React.FC = () => {
     errors.length > 0
       ? "text-red-500"
       : warnings.length > 0
-      ? "text-orange-500"
-      : "text-green-500";
+        ? "text-orange-500"
+        : "text-green-500";
   const bgColor =
     errors.length > 0
       ? "bg-red-500/5"
       : warnings.length > 0
-      ? "bg-orange-500/5"
-      : "bg-green-500/5";
+        ? "bg-orange-500/5"
+        : "bg-green-500/5";
   const borderColor =
     errors.length > 0
       ? "border-red-500/20"
       : warnings.length > 0
-      ? "border-orange-500/20"
-      : "border-green-500/20";
+        ? "border-orange-500/20"
+        : "border-green-500/20";
 
   return (
     <div
@@ -69,8 +69,8 @@ export const EditorHeader: React.FC = () => {
                 {errors.length > 0
                   ? `${errors.length} Errors`
                   : warnings.length > 0
-                  ? `${warnings.length} Warnings`
-                  : "Schema Valid"}
+                    ? `${warnings.length} Warnings`
+                    : "Schema Valid"}
               </span>
             </div>
           </div>
@@ -91,33 +91,30 @@ export const EditorHeader: React.FC = () => {
           <div className="flex items-center gap-1 bg-black/20 p-1 rounded-lg border border-neutral-800 mr-4">
             <button
               onClick={() => setActiveRightPanel("properties")}
-              className={`p-1.5 rounded-md transition-all ${
-                activeRightPanel === "properties"
+              className={`p-1.5 rounded-md transition-all ${activeRightPanel === "properties"
                   ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
                   : "text-neutral-500 hover:text-neutral-300"
-              }`}
+                }`}
               title="Table Properties"
             >
               <Fingerprint className="w-4 h-4" />
             </button>
             <button
               onClick={() => setActiveRightPanel("ai")}
-              className={`p-1.5 rounded-md transition-all ${
-                activeRightPanel === "ai"
+              className={`p-1.5 rounded-md transition-all ${activeRightPanel === "ai"
                   ? "bg-purple-600/20 text-purple-400 border border-purple-500/30"
                   : "text-neutral-500 hover:text-neutral-300"
-              }`}
+                }`}
               title="AI Assistant"
             >
               <Sparkles className="w-4 h-4" />
             </button>
             <button
               onClick={() => setActiveRightPanel("activity")}
-              className={`p-1.5 rounded-md transition-all ${
-                activeRightPanel === "activity"
+              className={`p-1.5 rounded-md transition-all ${activeRightPanel === "activity"
                   ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30"
                   : "text-neutral-500 hover:text-neutral-300"
-              }`}
+                }`}
               title="Session Activity"
             >
               <History className="w-4 h-4" />
@@ -144,11 +141,10 @@ export const EditorHeader: React.FC = () => {
             {validationIssues.map((issue) => (
               <div
                 key={issue.id}
-                className={`p-3 rounded-xl border ${
-                  issue.type === "error"
+                className={`p-3 rounded-xl border ${issue.type === "error"
                     ? "bg-red-500/5 border-red-500/10"
                     : "bg-orange-500/5 border-orange-500/10"
-                } flex gap-3`}
+                  } flex gap-3`}
               >
                 <div className="mt-0.5">
                   {issue.type === "error" ? (
@@ -161,7 +157,10 @@ export const EditorHeader: React.FC = () => {
                   <p className="text-xs font-semibold text-neutral-200 leading-tight mb-1">
                     {issue.message}
                   </p>
-                  <button className="text-[10px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-tighter">
+                  <button
+                    onClick={() => useStore.getState().setView("rls")}
+                    className="text-[10px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-tighter"
+                  >
                     Fix Issue
                   </button>
                 </div>

@@ -28,18 +28,16 @@ const NavItem = ({
   <button
     disabled={disabled}
     onClick={() => !disabled && onClick(view)}
-    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${
-      active
-        ? "bg-neutral-900 text-white font-medium"
-        : disabled
+    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${active
+      ? "bg-neutral-900 text-white font-medium"
+      : disabled
         ? "text-neutral-700 cursor-not-allowed opacity-50"
         : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
-    }`}
+      }`}
   >
     <Icon
-      className={`w-4 h-4 ${active ? "text-blue-500" : ""} ${
-        disabled ? "text-neutral-800" : ""
-      }`}
+      className={`w-4 h-4 ${active ? "text-blue-500" : ""} ${disabled ? "text-neutral-800" : ""
+        }`}
     />
     {label}
   </button>
@@ -92,9 +90,9 @@ export const Sidebar: React.FC = () => {
           />
           <NavItem
             icon={Activity}
-            label="Monitoring"
-            view="monitoring"
-            active={currentView === "monitoring"}
+            label="Schema Health"
+            view="health"
+            active={currentView === "health"}
             disabled={isNoProject}
             onClick={setView}
           />
@@ -121,7 +119,10 @@ export const Sidebar: React.FC = () => {
             ? "Create a project to see your table limits."
             : `You are using ${currentSchema.tables.length} of 50 tables in this project.`}
         </p>
-        <button className="w-full py-1.5 text-xs bg-neutral-800 hover:bg-neutral-700 text-white rounded transition-colors font-medium">
+        <button
+          onClick={() => setView('plans')}
+          className="w-full py-1.5 text-xs bg-neutral-800 hover:bg-neutral-700 text-white rounded transition-colors font-medium"
+        >
           Upgrade Limits
         </button>
       </div>

@@ -103,11 +103,10 @@ export const AIPanel: React.FC = () => {
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
-                      s.impact === "high"
+                    className={`mt-1 w-2 h-2 rounded-full shrink-0 ${s.impact === "high"
                         ? "bg-orange-500 animate-pulse"
                         : "bg-blue-500"
-                    }`}
+                      }`}
                   />
                   <div>
                     <h4 className="text-xs font-semibold text-neutral-100 group-hover:text-blue-400 transition-colors">
@@ -129,10 +128,13 @@ export const AIPanel: React.FC = () => {
             {suggestions.length === 0 && !isLoading && (
               <div className="py-8 text-center px-4">
                 <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-5 h-5 text-neutral-600" />
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
                 </div>
-                <p className="text-xs text-neutral-500">
-                  Your schema looks solid. No immediate optimizations detected.
+                <p className="text-xs text-neutral-400 font-medium mb-1">
+                  System Optimized
+                </p>
+                <p className="text-[10px] text-neutral-600">
+                  AI analysis complete. No critical performance bottlenecks detected.
                 </p>
               </div>
             )}

@@ -4,7 +4,7 @@ import { CanonicalSchema, Table, Column, Relationship, Project, AuditLog, Valida
 import { supabase } from './lib/supabase';
 import { User } from '@supabase/supabase-js';
 
-export type ViewType = 'overview' | 'editor' | 'code' | 'rls' | 'monitoring' | 'logs';
+export type ViewType = 'overview' | 'editor' | 'code' | 'rls' | 'health' | 'logs';
 
 interface AppState {
   user: User | null;
@@ -28,7 +28,7 @@ interface AppState {
   codeDialect: 'postgres' | 'mysql' | 'sqlite' | 'prisma';
   codeViewMode: 'full' | 'migration';
   baseSchema: CanonicalSchema;
-  
+
   // Actions
   checkUser: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -37,18 +37,18 @@ interface AppState {
   setSchema: (schema: CanonicalSchema) => void;
   selectTable: (id: string | null) => void;
   setView: (view: ViewType) => void;
-  
+
   // Project operations
   selectProject: (id: string | null) => Promise<void>;
   createProject: (name: string) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   logActivity: (action: string, itemName: string, details?: any) => Promise<void>;
-  
+
   // Table operations
   addTable: (name: string, x?: number, y?: number) => void;
   updateTable: (tableId: string, updates: Partial<Table>) => void;
   removeTable: (tableId: string) => void;
-  
+
   // Column operations
   addColumn: (tableId: string, column: Column) => void;
   updateColumn: (tableId: string, columnId: string, updates: Partial<Column>) => void;
@@ -156,8 +156,8 @@ export const useStore = create<AppState>((set, get) => ({
         .limit(20);
 
       const schema = project.data as CanonicalSchema;
-      set({ 
-        currentProjectId: id, 
+      set({
+        currentProjectId: id,
         currentSchema: {
           ...initialSchema,
           ...schema,
@@ -165,7 +165,7 @@ export const useStore = create<AppState>((set, get) => ({
           relationships: schema?.relationships || []
         },
         activityLogs: logs || [],
-        isLoading: false 
+        isLoading: false
       });
     } catch (err: any) {
       set({ error: err.message, isLoading: false });
@@ -187,9 +187,9 @@ export const useStore = create<AppState>((set, get) => ({
         .single();
 
       if (createError) throw createError;
-      
+
       const { projects } = get();
-      set({ 
+      set({
         projects: [newProject, ...projects],
         currentProjectId: newProject.id,
         currentSchema: initialSchema,
@@ -211,7 +211,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (error) throw error;
 
       const { projects, currentProjectId } = get();
-      set({ 
+      set({
         projects: projects.filter(p => p.id !== id),
         currentProjectId: currentProjectId === id ? null : currentProjectId
       });
@@ -239,7 +239,7 @@ export const useStore = create<AppState>((set, get) => ({
         .single();
 
       if (error) throw error;
-      
+
       set(state => ({ activityLogs: [log, ...state.activityLogs].slice(0, 20) }));
     } catch (err) {
       console.error("Failed to log activity:", err);
@@ -269,7 +269,7 @@ export const useStore = create<AppState>((set, get) => ({
     get().validateSchema();
   },
 
-  selectTable: (id) => set((state) => ({ 
+  selectTable: (id) => set((state) => ({
     selectedTableId: id,
     activeRightPanel: id ? 'properties' : state.activeRightPanel
   })),
@@ -280,6 +280,7 @@ export const useStore = create<AppState>((set, get) => ({
       id: `table_${Date.now()}`,
       name,
       position: { x, y },
+      policies: [],
       columns: [
         { id: `col_${Date.now()}`, name: 'id', type: 'uuid', isPrimaryKey: true, isNullable: false }
       ]
@@ -320,7 +321,7 @@ export const useStore = create<AppState>((set, get) => ({
       return {
         currentSchema: {
           ...state.currentSchema,
-          tables: state.currentSchema.tables.map((t) => 
+          tables: state.currentSchema.tables.map((t) =>
             t.id === tableId ? { ...t, ...updates } : t
           )
         },
@@ -365,7 +366,7 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       currentSchema: {
         ...state.currentSchema,
-        tables: state.currentSchema.tables.map((t) => 
+        tables: state.currentSchema.tables.map((t) =>
           t.id === tableId ? { ...t, columns: [...t.columns, column] } : t
         )
       },
@@ -388,7 +389,7 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => {
       const table = state.currentSchema.tables.find(t => t.id === tableId);
       const column = table?.columns.find(c => c.id === columnId);
-      
+
       const newLogs = [...state.sessionLogs];
       if (updates.name && updates.name !== column?.name) {
         newLogs.unshift({
@@ -415,7 +416,7 @@ export const useStore = create<AppState>((set, get) => ({
       return {
         currentSchema: {
           ...state.currentSchema,
-          tables: state.currentSchema.tables.map((t) => 
+          tables: state.currentSchema.tables.map((t) =>
             t.id === tableId ? {
               ...t,
               columns: t.columns.map(c => c.id === columnId ? { ...c, ...updates } : c)
@@ -436,7 +437,7 @@ export const useStore = create<AppState>((set, get) => ({
       return {
         currentSchema: {
           ...state.currentSchema,
-          tables: state.currentSchema.tables.map((t) => 
+          tables: state.currentSchema.tables.map((t) =>
             t.id === tableId ? { ...t, columns: t.columns.filter(c => c.id !== columnId) } : t
           )
         },
@@ -462,7 +463,7 @@ export const useStore = create<AppState>((set, get) => ({
   setDeploying: (deploying) => set({ isDeploying: deploying }),
 
   selectRelationship: (id) => set({ selectedRelationshipId: id }),
-  
+
   updateRelationship: (id, updates) => {
     set((state) => ({
       currentSchema: {
@@ -492,8 +493,8 @@ export const useStore = create<AppState>((set, get) => ({
         });
       }
 
-      // Check for missing RLS (mock)
-      if (table.name !== 'users') {
+      // Check for missing RLS
+      if ((!table.policies || table.policies.length === 0) && table.name !== 'users') {
         issues.push({
           id: `rls-${table.id}`,
           type: 'warning',
@@ -527,7 +528,7 @@ export const useStore = create<AppState>((set, get) => ({
             targetType: 'column'
           });
         }
-        
+
         // Check for common naming mistakes
         if (col.name.endsWith('_id') && !currentSchema.relationships.some(r => (r.fromTable === table.id && r.fromColumn === col.name) || (r.toTable === table.id && r.toColumn === col.name))) {
           issues.push({
